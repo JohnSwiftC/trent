@@ -4,20 +4,29 @@ use zstd;
 
 pub struct CompressedFile {
     bytes: Vec<u8>,
+    segments: usize,
+    last_segment_size: usize,
 }
 
 impl CompressedFile {
-    pub fn from_path<T: AsRef<Path>>(path: T) -> std::io::Result<Self> {
+    pub fn from_path<T: AsRef<Path>>(path: T, segments: usize) -> std::io::Result<Self> {
         let file: File = File::open(path)?;
-
+        let bytes = zstd::encode_all(file, 3)?;
+        let size = bytes.len();
         Ok(Self {
-            bytes: zstd::encode_all(file, 3)?,
+            bytes,
+            segments,
+            last_segment_size: size % segments,
         })
     }
 
-    pub fn from_file(file: File) -> std::io::Result<Self> {
+    pub fn from_file(file: File, segments: usize) -> std::io::Result<Self> {
+        let bytes = zstd::encode_all(file, 3)?;
+        let size = bytes.len();
         Ok(Self {
-            bytes: zstd::encode_all(file, 3)?,
+            bytes,
+            segments,
+            last_segment_size: size & segments,
         })
     }
 }
