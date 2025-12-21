@@ -1,83 +1,69 @@
 use crate::CompressedFile;
+use std::pin::Pin;
 use tokio::net::TcpStream;
 
 pub struct Context {
-    stream: TcpStream,
-    files: &'static [CompressedFile],
+    pub stream: Option<TcpStream>,
+    pub files: &'static [CompressedFile],
 }
 
-// The *extracted* types you want handlers to receive:
-pub struct Stream<'a>(pub &'a mut TcpStream);
+#[derive(Debug)]
+pub enum ContextError {
+    AlreadyTaken,
+}
+
+pub type Fut = Pin<Box<dyn Future<Output = ()> + Send>>;
+
+pub struct Stream(TcpStream);
 pub struct Files(pub &'static [CompressedFile]);
+pub struct File(pub &'static CompressedFile);
 
-// Marker extractor types (these are what implement FromContext)
-pub struct StreamArg;
-pub struct FilesArg;
-
-pub trait FromContext<'a> {
-    type Output;
-    fn from_context(context: &'a Context) -> Self::Output;
+pub trait FromContext: Sized + 'static {
+    fn from_context(context: &mut Context) -> Result<Self, ContextError>;
 }
 
-pub trait FromContextBorrowed<'a> {
-    type Output;
-    fn from_context(context: &'a mut Context) -> Self::Output;
-}
+impl FromContext for Stream {
+    fn from_context(context: &mut Context) -> Result<Self, ContextError> {
+        if let Some(stream) = context.stream.take() {
+            return Ok(Stream(stream));
+        }
 
-pub struct Mut<E>(std::marker::PhantomData<E>);
-
-impl<'a> FromContextBorrowed<'a> for StreamArg {
-    type Output = Stream<'a>;
-
-    fn from_context(context: &'a mut Context) -> Self::Output {
-        Stream(&mut context.stream)
+        Err(ContextError::AlreadyTaken)
     }
 }
 
-impl<'a> FromContext<'a> for FilesArg {
-    type Output = Files;
-
-    fn from_context(context: &'a Context) -> Self::Output {
-        Files(context.files)
+impl FromContext for Files {
+    fn from_context(context: &mut Context) -> Result<Self, ContextError> {
+        Ok(Files(context.files))
     }
 }
 
-pub trait Handler<E> {
-    fn call(self, state: Context);
+pub trait Handler<T> {
+    fn call(self, context: Context) -> Result<Fut, ContextError>;
 }
 
-impl<E, F> Handler<E> for F
+impl<T, F, R> Handler<T> for F
 where
-    for<'a> E: FromContext<'a>,
-    for<'a> F: Fn(<E as FromContext<'a>>::Output),
+    T: FromContext,
+    R: Future<Output = ()> + Send + 'static,
+    F: Fn(T) -> R,
 {
-    fn call(self, context: Context) {
-        let arg = <E as FromContext<'_>>::from_context(&context);
-        self(arg);
+    fn call(self, mut context: Context) -> Result<Fut, ContextError> {
+        Ok(Box::pin((self)(T::from_context(&mut context)?)))
     }
 }
 
-impl<E, F> Handler<Mut<E>> for F
+impl<T1, T2, F, R> Handler<(T1, T2)> for F
 where
-    for<'a> E: FromContextBorrowed<'a>,
-    for<'a> F: Fn(<E as FromContextBorrowed<'a>>::Output),
+    T1: FromContext,
+    T2: FromContext,
+    R: Future<Output = ()> + Send + 'static,
+    F: Fn(T1, T2) -> R,
 {
-    fn call(self, mut context: Context) {
-        let arg = <E as FromContextBorrowed<'_>>::from_context(&mut context);
-        self(arg);
-    }
-}
-
-impl<E1, E2, F, O1> Handler<(E1, E2)> for F
-where
-    for<'a> E1: FromContext<'a, Output = O1>,
-    for<'a> E2: FromContextBorrowed<'a>,
-    for<'a> F: Fn(O1, <E2 as FromContextBorrowed<'a>>::Output),
-    O1: 'static,
-{
-    fn call(self, mut context: Context) {
-        let arg1 = <E1 as FromContext<'_>>::from_context(&context);
-        let arg2 = <E2 as FromContextBorrowed<'_>>::from_context(&mut context);
-        self(arg1, arg2);
+    fn call(self, mut context: Context) -> Result<Fut, ContextError> {
+        Ok(Box::pin((self)(
+            T1::from_context(&mut context)?,
+            T2::from_context(&mut context)?,
+        )))
     }
 }
