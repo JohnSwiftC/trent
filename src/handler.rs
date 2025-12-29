@@ -14,7 +14,7 @@ pub enum ContextError {
 
 pub type Fut = Pin<Box<dyn Future<Output = ()> + Send>>;
 
-pub struct Stream(TcpStream);
+pub struct Stream(pub TcpStream);
 pub struct Files(pub &'static [CompressedFile]);
 pub struct File(pub &'static CompressedFile);
 
