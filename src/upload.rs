@@ -1,4 +1,3 @@
-
 use crate::{
     handler::{Files, Stream},
     loading::CompressedFile,
@@ -42,7 +41,6 @@ pub async fn upload_file(Stream(mut stream): Stream, Files(files): Files) {
     stream.write_u32(file.last_chunk_size()).await.unwrap();
 
     loop {
-        
         let chunk = match stream.read_u32().await {
             Ok(m) => m,
             Err(_e) => return,
