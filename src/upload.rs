@@ -1,4 +1,9 @@
-use crate::handler::{File, Files, Stream};
+use std::ffi::OsString;
+
+use crate::{
+    handler::{File, Files, Stream},
+    loading::CompressedFile,
+};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub async fn upload_file(Stream(mut stream): Stream, Files(files): Files) {
@@ -7,18 +12,46 @@ pub async fn upload_file(Stream(mut stream): Stream, Files(files): Files) {
         return;
     }
 
-    let file_name: String;
+    let mut terminator: usize = 255;
     for (i, b) in file_name_bytes.iter().enumerate() {
-        if *b == 0 || i == 255 {
-            file_name = 
+        if *b == 0 {
+            terminator = i;
+            break;
         }
     }
 
+    let file_name = String::from_utf8_lossy(&file_name_bytes[..terminator]);
+
+    let mut file: Option<&'static CompressedFile> = None;
+
+    for f in files {
+        if f.name() == file_name {
+            file = Some(f);
+            break;
+        }
+    }
+
+    if file.is_none() {
+        // handle some no named file case here
+        todo!();
+    }
+
+    let file = file.unwrap();
+
+    stream.write_u32(file.chunks()).await.unwrap();
+    stream.write_u32(file.chunk_size()).await.unwrap();
+    stream.write_u32(file.last_chunk_size()).await.unwrap();
+
     loop {
-        let mut chunk = 0;
-        match stream.read_u16().await {
+        let chunk;
+        match stream.read_u32().await {
             Ok(m) => chunk = m,
             Err(_e) => return,
         }
+
+        stream
+            .write_all(file.get_chunk(chunk).unwrap())
+            .await
+            .unwrap();
     }
 }
