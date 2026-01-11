@@ -7,7 +7,7 @@ pub mod upload;
 
 use loading::CompressedFile;
 
-use handler::{Context, Files, FromContext, Handler, Stream};
+use handler::{Context, Files, Handler};
 
 static LOADED_FILES: OnceLock<Vec<CompressedFile>> = OnceLock::new();
 
@@ -42,7 +42,7 @@ async fn dummy_tcp_stream() -> TcpStream {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
 
-    let client = TcpStream::connect(addr).await.unwrap();
+    let _client = TcpStream::connect(addr).await.unwrap();
     let (server, _) = listener.accept().await.unwrap();
 
     // `client` and `server` are connected

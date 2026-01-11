@@ -1,7 +1,6 @@
-use std::ffi::OsString;
 
 use crate::{
-    handler::{File, Files, Stream},
+    handler::{Files, Stream},
     loading::CompressedFile,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -43,11 +42,11 @@ pub async fn upload_file(Stream(mut stream): Stream, Files(files): Files) {
     stream.write_u32(file.last_chunk_size()).await.unwrap();
 
     loop {
-        let chunk;
-        match stream.read_u32().await {
-            Ok(m) => chunk = m,
+        
+        let chunk = match stream.read_u32().await {
+            Ok(m) => m,
             Err(_e) => return,
-        }
+        };
 
         stream
             .write_all(file.get_chunk(chunk).unwrap())
