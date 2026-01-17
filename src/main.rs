@@ -15,7 +15,10 @@ static LOADED_FILES: OnceLock<Vec<CompressedFile>> = OnceLock::new();
 
 #[tokio::main]
 async fn main() {
-    set_files(Vec::new()).unwrap();
+    set_files(vec![
+        CompressedFile::from_path("dogdog.jpg", 15, String::from("dogdog")).unwrap(),
+    ])
+    .unwrap();
     let files: &'static [CompressedFile] = get_files().unwrap();
 
     let context = Context {
@@ -24,6 +27,24 @@ async fn main() {
     };
 
     Handler::call(test, context).unwrap().await;
+}
+
+async fn start_server() {
+    let listener = TcpListener::bind("0.0.0.0:6969").await.unwrap();
+    let files: &'static [CompressedFile] = get_files().unwrap();
+
+    while let Ok((stream, _)) = listener.accept().await {
+        let context = Context {
+            stream: Some(stream),
+            files,
+        };
+
+        Handler::call(upload::upload_file, context).unwrap().await;
+    }
+}
+
+async fn start_client() {
+    let stream = TcpStream::connect("0.0.0.0:6969").await.unwrap();
 }
 
 async fn test(Files(files): Files) {

@@ -46,5 +46,10 @@ pub async fn download_file(
         }
     }
 
+    let hmm = zstd::decode_all(file).unwrap();
+    let mut new_file = File::create_new("testimage.jpg").unwrap();
+
+    new_file.write_all(&hmm).unwrap();
+
     Ok(())
 }
