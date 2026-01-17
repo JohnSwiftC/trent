@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::io::Read;
 use std::path::Path;
 use zstd;
 
@@ -33,6 +34,25 @@ impl CompressedFile {
             bytes,
             segments,
             last_segment_size: size & segments,
+            name,
+        })
+    }
+
+    /// Really hacky function to see why this image wont
+    /// send properly
+    pub fn from_file_uncompressed<P: AsRef<Path>>(
+        path: P,
+        segments: usize,
+        name: String,
+    ) -> std::io::Result<Self> {
+        let mut file: File = File::open(path)?;
+        let mut bytes: Vec<u8> = Vec::new();
+        file.read_to_end(&mut bytes).unwrap();
+        let size = bytes.len();
+        Ok(Self {
+            bytes,
+            segments,
+            last_segment_size: size % segments,
             name,
         })
     }
