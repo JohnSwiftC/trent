@@ -1,6 +1,6 @@
 use crate::{
+    cfile::CompressedFile,
     handler::{Files, Stream},
-    loading::CompressedFile,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 

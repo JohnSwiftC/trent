@@ -1,13 +1,13 @@
 use std::sync::OnceLock;
 use tokio::net::{TcpListener, TcpStream};
 
+pub mod cfile;
 pub mod download;
 pub mod handler;
-pub mod loading;
 pub mod upload;
 pub mod util;
 
-use loading::CompressedFile;
+use cfile::CompressedFile;
 
 use handler::{Context, Files, Handler};
 
