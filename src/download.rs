@@ -30,7 +30,7 @@ pub async fn download_file(
     let last_chunk_size = stream.read_u32().await?;
 
     let mut chunk_buffer: Vec<u8> = vec![0; chunk_size as usize];
-    for c in 1..=chunks {
+    for c in 0..chunks {
         stream.write_u32(c).await?;
 
         if c == chunks {

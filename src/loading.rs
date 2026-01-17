@@ -1,94 +1,66 @@
-use std::fs::File;
 use std::io::Read;
-use std::path::Path;
-use zstd;
-
 pub struct CompressedFile {
     bytes: Vec<u8>,
-    segments: usize,
-    last_segment_size: usize,
+    segments: usize,        // number of chunks
+    chunk_size: usize,      // base size
+    last_chunk_size: usize, // size of final chunk
     name: String,
 }
 
 impl CompressedFile {
-    pub fn from_path<T: AsRef<Path>>(
-        path: T,
-        segments: usize,
-        name: String,
-    ) -> std::io::Result<Self> {
-        let file: File = File::open(path)?;
-        let bytes = zstd::encode_all(file, 3)?;
-        let size = bytes.len();
-        Ok(Self {
+    fn new(bytes: Vec<u8>, segments: usize, name: String) -> Self {
+        let len = bytes.len();
+        let base = len / segments;
+        let rem = len % segments;
+        let last = base + rem; // remainder goes into final chunk
+
+        Self {
             bytes,
             segments,
-            last_segment_size: size % segments,
+            chunk_size: base,
+            last_chunk_size: last,
             name,
-        })
+        }
     }
 
-    pub fn from_file(file: File, segments: usize, name: String) -> std::io::Result<Self> {
-        let bytes = zstd::encode_all(file, 3)?;
-        let size = bytes.len();
-        Ok(Self {
-            bytes,
-            segments,
-            last_segment_size: size & segments,
-            name,
-        })
-    }
-
-    /// Really hacky function to see why this image wont
-    /// send properly
-    pub fn from_file_uncompressed<P: AsRef<Path>>(
+    pub fn from_file_uncompressed<P: AsRef<std::path::Path>>(
         path: P,
         segments: usize,
         name: String,
     ) -> std::io::Result<Self> {
-        let mut file: File = File::open(path)?;
-        let mut bytes: Vec<u8> = Vec::new();
-        file.read_to_end(&mut bytes).unwrap();
-        let size = bytes.len();
-        Ok(Self {
-            bytes,
-            segments,
-            last_segment_size: size % segments,
-            name,
-        })
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn bytes(&self) -> &[u8] {
-        &self.bytes
+        let mut file = std::fs::File::open(path)?;
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes)?;
+        Ok(Self::new(bytes, segments, name))
     }
 
     pub fn chunks(&self) -> u32 {
         self.segments as u32
     }
-
     pub fn chunk_size(&self) -> u32 {
-        self.bytes.len() as u32 / self.segments as u32
+        self.chunk_size as u32
     }
-
     pub fn last_chunk_size(&self) -> u32 {
-        self.last_segment_size as u32
+        self.last_chunk_size as u32
     }
 
-    pub fn get_chunk(&'static self, chunk: u32) -> Option<&'static [u8]> {
-        if chunk as usize > self.segments {
+    pub fn get_chunk(&self, chunk: u32) -> Option<&[u8]> {
+        let chunk = chunk as usize;
+        if chunk >= self.segments {
             return None;
         }
 
-        if chunk as usize == self.segments {
-            return Some(&self.bytes[(self.bytes.len() - self.last_segment_size - 1)..]);
-        }
+        let start = self.chunk_size * chunk;
+        let end = if chunk + 1 == self.segments {
+            start + self.last_chunk_size
+        } else {
+            start + self.chunk_size
+        };
 
-        let left = self.bytes.len() / self.segments * chunk as usize;
-        let right = left + (self.bytes.len() / self.segments);
+        self.bytes.get(start..end)
+    }
 
-        Some(&self.bytes[left..right])
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }
