@@ -14,15 +14,29 @@ use handler::{Context, Files, Handler};
 static LOADED_FILES: OnceLock<Vec<CompressedFile>> = OnceLock::new();
 
 #[tokio::main]
-async fn main() {}
+async fn main() {
+    let option: String = std::env::args()
+        .collect::<Vec<String>>()
+        .get(1)
+        .cloned()
+        .expect("No arg provided");
 
+    match option.as_str() {
+        "server" => start_server().await,
+        "client" => start_client().await,
+        _ => (),
+    }
+}
+
+/// Very hacky rn, will solidify later
+/// but I need to get file transfer mechanics down here.
 async fn start_server() {
     set_files(vec![
         CompressedFile::from_path("dogdog.jpg", 15, String::from("dogdog")).unwrap(),
     ])
     .unwrap();
 
-    let listener = TcpListener::bind("0.0.0.0:6969").await.unwrap();
+    let listener = TcpListener::bind("127.0.0.1:6969").await.unwrap();
     let files: &'static [CompressedFile] = get_files().unwrap();
 
     while let Ok((stream, _)) = listener.accept().await {
@@ -35,8 +49,13 @@ async fn start_server() {
     }
 }
 
+/// Read start_server
 async fn start_client() {
-    let stream = TcpStream::connect("0.0.0.0:6969").await.unwrap();
+    let stream = TcpStream::connect("127.0.0.1:6969").await.unwrap();
+
+    download::download_file(stream, "dogdog", "newdogdog.png")
+        .await
+        .unwrap();
 }
 
 async fn test(Files(files): Files) {

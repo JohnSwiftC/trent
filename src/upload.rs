@@ -18,11 +18,14 @@ pub async fn upload_file(Stream(mut stream): Stream, Files(files): Files) {
         }
     }
 
+    println!("{}", terminator);
+
     let file_name = String::from_utf8_lossy(&file_name_bytes[..terminator]);
 
     let mut file: Option<&'static CompressedFile> = None;
 
     for f in files {
+        println!("{}, {}", f.name(), file_name);
         if f.name() == file_name {
             file = Some(f);
             break;
@@ -31,7 +34,7 @@ pub async fn upload_file(Stream(mut stream): Stream, Files(files): Files) {
 
     if file.is_none() {
         // handle some no named file case here
-        todo!();
+        eprint!("Not good!!!");
     }
 
     let file = file.unwrap();
