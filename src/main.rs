@@ -14,22 +14,14 @@ use handler::{Context, Files, Handler};
 static LOADED_FILES: OnceLock<Vec<CompressedFile>> = OnceLock::new();
 
 #[tokio::main]
-async fn main() {
+async fn main() {}
+
+async fn start_server() {
     set_files(vec![
         CompressedFile::from_path("dogdog.jpg", 15, String::from("dogdog")).unwrap(),
     ])
     .unwrap();
-    let files: &'static [CompressedFile] = get_files().unwrap();
 
-    let context = Context {
-        stream: Some(dummy_tcp_stream().await),
-        files,
-    };
-
-    Handler::call(test, context).unwrap().await;
-}
-
-async fn start_server() {
     let listener = TcpListener::bind("0.0.0.0:6969").await.unwrap();
     let files: &'static [CompressedFile] = get_files().unwrap();
 
