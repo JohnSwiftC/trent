@@ -32,7 +32,7 @@ async fn main() {
 /// but I need to get file transfer mechanics down here.
 async fn start_server() {
     set_files(vec![
-        CompressedFile::from_file_uncompressed("dogdog.jpg", 15, String::from("dogdog")).unwrap(),
+        CompressedFile::from_path_mmap("dogdog.jpg", 15, String::from("dogdog")).unwrap(),
     ])
     .unwrap();
 
