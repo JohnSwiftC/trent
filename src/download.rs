@@ -54,7 +54,7 @@ pub async fn download_file(mut stream: TcpStream, name: &str, save_name: &str) -
         Ok(())
     })
     .await
-    .map_err(|e| io::Error::new(io::ErrorKind::Other, e))??;
+    .map_err(|e| std::io::Error::other(format!("Failed: {}", e)))??;
 
     Ok(())
 }
