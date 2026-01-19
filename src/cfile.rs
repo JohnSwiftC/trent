@@ -34,7 +34,7 @@ impl CompressedFile {
         let len = mmap.len();
         let base = len / segments;
         let rem = len % segments;
-        let last = base + rem;
+        let last = rem;
 
         Ok(Self {
             mmap,

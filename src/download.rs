@@ -1,55 +1,60 @@
-use crate::util::write_str_utf8;
-
+use std::fs::File;
+use std::io::Write;
+use std::io::{self, BufReader, BufWriter};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
-use std::fs::File;
-use std::io::Error;
-use std::io::Write;
-
-pub struct DownloadingFile {
-    name: String,
-    file: File,
-    last_downloaded_chunk: u32,
-}
-
-pub async fn download_file(
-    mut stream: TcpStream,
-    name: &str,
-    save_name: &str,
-) -> Result<(), Error> {
-    let mut file_name_bytes: [u8; 256] = [0; 256];
-    write_str_utf8(&mut file_name_bytes, name);
-
+pub async fn download_file(mut stream: TcpStream, name: &str, save_name: &str) -> io::Result<()> {
+    let mut file_name_bytes = [0u8; 256];
+    crate::util::write_str_utf8(&mut file_name_bytes, name);
     stream.write_all(&file_name_bytes).await?;
 
-    let mut file = File::create_new(save_name)?;
+    let mut compressed_out = File::create_new(save_name)?;
+
+    let version = stream.read_u32().await?;
+
+    if version != 0 {
+        eprintln!("Version conflict, quitting");
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Unsupported,
+            "Server version unsupported",
+        ));
+    }
 
     let chunks = stream.read_u32().await?;
     let chunk_size = stream.read_u32().await?;
     let last_chunk_size = stream.read_u32().await?;
 
-    let mut chunk_buffer: Vec<u8> = vec![0; chunk_size as usize];
+    let mut chunk_buffer = vec![0u8; chunk_size as usize];
+
     for c in 0..chunks {
         stream.write_u32(c).await?;
 
-        if c == chunks {
+        if c == chunks - 1 {
             stream
                 .read_exact(&mut chunk_buffer[..last_chunk_size as usize])
                 .await?;
-
-            file.write_all(&chunk_buffer[..last_chunk_size as usize])?;
-            break;
+            compressed_out.write_all(&chunk_buffer[..last_chunk_size as usize])?;
         } else {
             stream.read_exact(&mut chunk_buffer).await?;
-            file.write_all(&chunk_buffer)?;
+            compressed_out.write_all(&chunk_buffer)?;
         }
     }
 
-    let hmm = zstd::decode_all(file).unwrap();
-    let mut new_file = File::create_new("testimage.jpg").unwrap();
+    let compressed_path = save_name.to_string();
+    tokio::task::spawn_blocking(move || -> io::Result<()> {
+        let compressed_in = File::open(compressed_path)?;
+        let mut decoder = zstd::stream::read::Decoder::new(BufReader::new(compressed_in))?;
 
-    new_file.write_all(&hmm).unwrap();
+        let out = File::create_new("testimage.jpg")?;
+        let mut out = BufWriter::new(out);
+
+        io::copy(&mut decoder, &mut out)?;
+        out.flush()?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| io::Error::new(io::ErrorKind::Other, e))??;
 
     Ok(())
 }
