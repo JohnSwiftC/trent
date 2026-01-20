@@ -25,7 +25,7 @@ pub async fn download_file(mut stream: TcpStream, name: &str, save_name: &str) -
     let chunk_size = stream.read_u32().await?;
     let last_chunk_size = stream.read_u32().await?;
 
-    let mut chunk_buffer = vec![0u8; chunk_size as usize];
+    let mut chunk_buffer = vec![0u8; chunk_size.max(last_chunk_size) as usize];
 
     for c in 0..chunks {
         stream.write_u32(c).await?;
@@ -36,8 +36,10 @@ pub async fn download_file(mut stream: TcpStream, name: &str, save_name: &str) -
                 .await?;
             compressed_out.write_all(&chunk_buffer[..last_chunk_size as usize])?;
         } else {
-            stream.read_exact(&mut chunk_buffer).await?;
-            compressed_out.write_all(&chunk_buffer)?;
+            stream
+                .read_exact(&mut chunk_buffer[..chunk_size as usize])
+                .await?;
+            compressed_out.write_all(&chunk_buffer[..chunk_size as usize])?;
         }
     }
 
