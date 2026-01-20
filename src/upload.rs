@@ -1,5 +1,5 @@
 use crate::{
-    cfile::CompressedFile,
+    cfile::TrentFile,
     handler::{Files, Stream},
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -20,7 +20,7 @@ pub async fn upload_file(Stream(mut stream): Stream, Files(files): Files) {
 
     let file_name = String::from_utf8_lossy(&file_name_bytes[..terminator]);
 
-    let mut file: Option<&'static CompressedFile> = None;
+    let mut file: Option<&'static TrentFile> = None;
 
     for f in files {
         if f.name() == file_name {

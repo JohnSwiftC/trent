@@ -7,11 +7,11 @@ pub mod handler;
 pub mod upload;
 pub mod util;
 
-use cfile::CompressedFile;
+use cfile::TrentFile;
 
 use handler::{Context, Files, Handler};
 
-static LOADED_FILES: OnceLock<Vec<CompressedFile>> = OnceLock::new();
+static LOADED_FILES: OnceLock<Vec<TrentFile>> = OnceLock::new();
 
 #[tokio::main]
 async fn main() {
@@ -32,12 +32,12 @@ async fn main() {
 /// but I need to get file transfer mechanics down here.
 async fn start_server() {
     set_files(vec![
-        CompressedFile::from_path_zstd_mmap("dogdog.jpg", 15, String::from("dogdog"), 6).unwrap(),
+        TrentFile::from_path_zstd_mmap("dogdog.jpg", 15, String::from("dogdog"), 6).unwrap(),
     ])
     .unwrap();
 
     let listener = TcpListener::bind("127.0.0.1:6969").await.unwrap();
-    let files: &'static [CompressedFile] = get_files().unwrap();
+    let files: &'static [TrentFile] = get_files().unwrap();
 
     while let Ok((stream, _)) = listener.accept().await {
         let context = Context {
@@ -62,12 +62,12 @@ async fn test(Files(files): Files) {
     println!("Hello {}", files.len());
 }
 
-fn set_files(files: Vec<CompressedFile>) -> Result<(), ()> {
+fn set_files(files: Vec<TrentFile>) -> Result<(), ()> {
     LOADED_FILES.set(files).map_err(|_| ())?;
     Ok(())
 }
 
-fn get_files() -> Option<&'static [CompressedFile]> {
+fn get_files() -> Option<&'static [TrentFile]> {
     // Some interesting reference stuff here
     LOADED_FILES.get().map(|e| &**e)
 }

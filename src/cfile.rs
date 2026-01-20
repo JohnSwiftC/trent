@@ -8,12 +8,16 @@ use std::{
 use memmap2::Mmap;
 use tempfile::NamedTempFile;
 
+// Compiler calls this dead code, this is used to ensure
+// CompressedFile has ownership of the file that its mmap
+// references, see the unsafe mmap calls.
+#[allow(dead_code)]
 enum Owner {
     Original(File),
     Compressed(NamedTempFile),
 }
 
-pub struct CompressedFile {
+pub struct TrentFile {
     mmap: Mmap,
     _owner: Owner,
     segments: usize,
@@ -22,7 +26,7 @@ pub struct CompressedFile {
     name: String,
 }
 
-impl CompressedFile {
+impl TrentFile {
     fn new_mmap(mmap: Mmap, owner: Owner, segments: usize, name: String) -> io::Result<Self> {
         if segments == 0 {
             return Err(io::Error::new(
@@ -120,5 +124,13 @@ impl CompressedFile {
 
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    pub fn is_compressed(&self) -> bool {
+        if let Owner::Compressed(_) = self._owner {
+            true
+        } else {
+            false
+        }
     }
 }

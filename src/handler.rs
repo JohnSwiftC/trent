@@ -1,10 +1,10 @@
-use crate::CompressedFile;
+use crate::TrentFile;
 use std::pin::Pin;
 use tokio::net::TcpStream;
 
 pub struct Context {
     pub stream: Option<TcpStream>,
-    pub files: &'static [CompressedFile],
+    pub files: &'static [TrentFile],
 }
 
 #[derive(Debug)]
@@ -15,8 +15,8 @@ pub enum ContextError {
 pub type Fut = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 pub struct Stream(pub TcpStream);
-pub struct Files(pub &'static [CompressedFile]);
-pub struct File(pub &'static CompressedFile);
+pub struct Files(pub &'static [TrentFile]);
+pub struct File(pub &'static TrentFile);
 
 pub trait FromContext: Sized + 'static {
     fn from_context(context: &mut Context) -> Result<Self, ContextError>;
