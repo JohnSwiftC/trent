@@ -4,7 +4,7 @@ use std::io::{self, BufReader, BufWriter};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
-pub async fn download_file(mut stream: TcpStream, name: &str, save_name: &str) -> io::Result<()> {
+pub async fn download_file(stream: &mut TcpStream, name: &str, save_name: &str) -> io::Result<()> {
     let mut file_name_bytes = [0u8; 256];
     crate::util::write_str_utf8(&mut file_name_bytes, name);
     stream.write_all(&file_name_bytes).await?;
@@ -27,13 +27,15 @@ pub async fn download_file(mut stream: TcpStream, name: &str, save_name: &str) -
     // This flag indicates the file being compressed
     if flags & 1 == 1 {
         download_compressed(stream, save_name, chunks, chunk_size, last_chunk_size).await?;
+    } else {
+        download_uncompressed(stream, save_name, chunks, chunk_size, last_chunk_size).await?;
     }
 
     Ok(())
 }
 
 async fn download_compressed(
-    mut stream: TcpStream,
+    stream: &mut TcpStream,
     save_name: &str,
     chunks: u32,
     chunk_size: u32,
@@ -80,6 +82,37 @@ async fn download_compressed(
     })
     .await
     .map_err(|e| std::io::Error::other(format!("Failed: {}", e)))??;
+
+    Ok(())
+}
+
+async fn download_uncompressed(
+    stream: &mut TcpStream,
+    save_name: &str,
+    chunks: u32,
+    chunk_size: u32,
+    last_chunk_size: u32,
+) -> io::Result<()> {
+    let mut out = File::create_new(&save_name)?;
+    let mut chunk_buffer = vec![0u8; chunk_size.max(last_chunk_size) as usize];
+
+    for c in 0..chunks {
+        stream.write_u32(c).await?;
+
+        if c == chunks - 1 {
+            stream
+                .read_exact(&mut chunk_buffer[..last_chunk_size as usize])
+                .await?;
+            out.write_all(&chunk_buffer[..last_chunk_size as usize])?;
+        } else {
+            stream
+                .read_exact(&mut chunk_buffer[..chunk_size as usize])
+                .await?;
+            out.write_all(&chunk_buffer[..chunk_size as usize])?;
+        }
+    }
+
+    out.flush()?;
 
     Ok(())
 }

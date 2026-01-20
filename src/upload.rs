@@ -1,10 +1,10 @@
-use crate::{
-    cfile::TrentFile,
-    handler::{Files, Stream},
+use crate::cfile::TrentFile;
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpStream,
 };
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-pub async fn upload_file(Stream(mut stream): Stream, Files(files): Files) {
+pub async fn upload_file(mut stream: TcpStream, files: &'static [TrentFile]) {
     let mut file_name_bytes: Vec<u8> = vec![0; 256];
     if stream.read_exact(&mut file_name_bytes).await.is_err() {
         return;

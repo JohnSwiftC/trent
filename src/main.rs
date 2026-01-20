@@ -3,13 +3,10 @@ use tokio::net::{TcpListener, TcpStream};
 
 pub mod cfile;
 pub mod download;
-pub mod handler;
 pub mod upload;
 pub mod util;
 
 use cfile::TrentFile;
-
-use handler::{Context, Files, Handler};
 
 static LOADED_FILES: OnceLock<Vec<TrentFile>> = OnceLock::new();
 
@@ -32,7 +29,7 @@ async fn main() {
 /// but I need to get file transfer mechanics down here.
 async fn start_server() {
     set_files(vec![
-        TrentFile::from_path_zstd_mmap("dogdog.jpg", 15, String::from("dogdog"), 6).unwrap(),
+        TrentFile::from_path_mmap("testvideo.mp4", 45, String::from("largevideo")).unwrap(),
     ])
     .unwrap();
 
@@ -40,26 +37,17 @@ async fn start_server() {
     let files: &'static [TrentFile] = get_files().unwrap();
 
     while let Ok((stream, _)) = listener.accept().await {
-        let context = Context {
-            stream: Some(stream),
-            files,
-        };
-
-        let _task = tokio::task::spawn(Handler::call(upload::upload_file, context).unwrap());
+        let _task = tokio::task::spawn(upload::upload_file(stream, files));
     }
 }
 
 /// Read start_server
 async fn start_client() {
-    let stream = TcpStream::connect("127.0.0.1:6969").await.unwrap();
+    let mut stream = TcpStream::connect("127.0.0.1:6969").await.unwrap();
 
-    download::download_file(stream, "dogdog", "newdogdog.png")
+    download::download_file(&mut stream, "largevideo", "newvid.mp4")
         .await
         .unwrap();
-}
-
-async fn test(Files(files): Files) {
-    println!("Hello {}", files.len());
 }
 
 fn set_files(files: Vec<TrentFile>) -> Result<(), ()> {
@@ -70,15 +58,4 @@ fn set_files(files: Vec<TrentFile>) -> Result<(), ()> {
 fn get_files() -> Option<&'static [TrentFile]> {
     // Some interesting reference stuff here
     LOADED_FILES.get().map(|e| &**e)
-}
-
-async fn dummy_tcp_stream() -> TcpStream {
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
-
-    let _client = TcpStream::connect(addr).await.unwrap();
-    let (server, _) = listener.accept().await.unwrap();
-
-    // `client` and `server` are connected
-    server
 }

@@ -1,9 +1,4 @@
-use std::{
-    fs::File,
-    io,
-    io::{Read, Write},
-    path::Path,
-};
+use std::{fs::File, io, io::Write, path::Path};
 
 use memmap2::Mmap;
 use tempfile::NamedTempFile;
@@ -65,7 +60,7 @@ impl TrentFile {
         {
             let mut encoder = zstd::stream::Encoder::new(&mut tmp, level)?;
             io::copy(&mut input, &mut encoder)?;
-            let mut writer = encoder.finish()?;
+            let writer = encoder.finish()?;
             writer.flush()?;
         }
 
@@ -80,7 +75,7 @@ impl TrentFile {
         segments: usize,
         name: String,
     ) -> io::Result<Self> {
-        let mut file = File::open(path)?;
+        let file = File::open(path)?;
         let mmap = unsafe { Mmap::map(&file)? };
 
         Self::new_mmap(mmap, Owner::Original(file), segments, name)
