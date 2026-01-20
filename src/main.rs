@@ -2,9 +2,7 @@ use std::sync::OnceLock;
 
 pub mod cfile;
 pub mod client;
-pub mod download;
 pub mod server;
-pub mod upload;
 pub mod util;
 
 use cfile::TrentFile;

@@ -1,7 +1,8 @@
 use crate::LOADED_FILES;
 use crate::TrentFile;
-use crate::upload;
 use tokio::net::TcpListener;
+
+pub mod upload;
 
 pub async fn start_server() {
     set_files(vec![
