@@ -48,7 +48,7 @@ pub async fn download_file(mut stream: TcpStream, name: &str, save_name: &str) -
         let compressed_in = File::open(compressed_path)?;
         let mut decoder = zstd::stream::read::Decoder::new(BufReader::new(compressed_in))?;
 
-        let out = File::create_new("testimage.jpg")?;
+        let out = File::create_new("testimage.png")?;
         let mut out = BufWriter::new(out);
 
         io::copy(&mut decoder, &mut out)?;

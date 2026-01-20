@@ -45,7 +45,7 @@ async fn start_server() {
             files,
         };
 
-        Handler::call(upload::upload_file, context).unwrap().await;
+        let _task = tokio::task::spawn(Handler::call(upload::upload_file, context).unwrap());
     }
 }
 
