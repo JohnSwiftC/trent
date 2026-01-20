@@ -11,7 +11,7 @@ pub async fn download_file(stream: &mut TcpStream, name: &str, save_name: &str) 
 
     let version = stream.read_u32().await?;
 
-    if version != 0 {
+    if version != crate::VERSION {
         eprintln!("Version conflict, quitting");
         return Err(std::io::Error::new(
             std::io::ErrorKind::Unsupported,

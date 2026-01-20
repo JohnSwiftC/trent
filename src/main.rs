@@ -8,6 +8,7 @@ pub mod util;
 use cfile::TrentFile;
 
 static LOADED_FILES: OnceLock<Vec<TrentFile>> = OnceLock::new();
+static VERSION: u32 = 0;
 
 #[tokio::main]
 async fn main() {

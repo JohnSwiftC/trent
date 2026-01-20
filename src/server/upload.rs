@@ -36,7 +36,7 @@ pub async fn upload_file(mut stream: TcpStream, files: &'static [TrentFile]) {
 
     let file = file.unwrap();
 
-    stream.write_u32(0).await.unwrap();
+    stream.write_u32(crate::VERSION).await.unwrap();
     stream
         .write_u32(0 ^ file.is_compressed() as u32)
         .await
