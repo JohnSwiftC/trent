@@ -20,7 +20,7 @@ async fn main() {
 
     match option.as_str() {
         "server" => server::start_server().await,
-        "client" => client::start_client().await,
+        "client" => client::start_client().await.unwrap(),
         _ => (),
     }
 }

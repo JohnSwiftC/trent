@@ -1,13 +1,17 @@
+use std::io;
+
 use crate::LOADED_FILES;
 use crate::TrentFile;
-use tokio::net::TcpListener;
-
+use tokio::net::{TcpListener, TcpStream};
 mod standard;
 mod upload;
 
+use standard::ServerRoute;
+
 pub async fn start_server() {
     set_files(vec![
-        TrentFile::from_path_mmap("testvideo.mp4", 45, String::from("largevideo")).unwrap(),
+        TrentFile::from_path_zstd_mmap("testvideo.mp4", 45, String::from("largevideo"), 10)
+            .unwrap(),
     ])
     .unwrap();
 
@@ -15,8 +19,18 @@ pub async fn start_server() {
     let files: &'static [TrentFile] = get_files().unwrap();
 
     while let Ok((stream, _)) = listener.accept().await {
-        let _task = tokio::task::spawn(upload::upload_file(stream, files));
+        let _task = tokio::task::spawn(handle(stream, files));
     }
+}
+
+async fn handle(mut stream: TcpStream, files: &'static [TrentFile]) -> io::Result<()> {
+    match standard::route(&mut stream).await? {
+        ServerRoute::Upload => upload::upload_file(stream, files).await,
+        ServerRoute::GetFiles => todo!(),
+        ServerRoute::Unknown => todo!(),
+    }
+
+    Ok(())
 }
 
 fn set_files(files: Vec<TrentFile>) -> Result<(), ()> {
