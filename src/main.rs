@@ -19,7 +19,7 @@ async fn main() {
         .expect("No arg provided");
 
     match option.as_str() {
-        "server" => server::start_server().await,
+        "server" => server::start_server(6969).await,
         "client" => client::start_client().await.unwrap(),
         _ => (),
     }

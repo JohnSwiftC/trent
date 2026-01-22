@@ -1,21 +1,26 @@
 use std::io;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use crate::LOADED_FILES;
 use crate::TrentFile;
 use tokio::net::{TcpListener, TcpStream};
+mod config;
+mod getfiles;
 mod standard;
 mod upload;
 
 use standard::ServerRoute;
 
-pub async fn start_server() {
+pub async fn start_server(port: u16) {
+    let socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), port);
+
     set_files(vec![
         TrentFile::from_path_zstd_mmap("testvideo.mp4", 45, String::from("largevideo"), 10)
             .unwrap(),
     ])
     .unwrap();
 
-    let listener = TcpListener::bind("127.0.0.1:6969").await.unwrap();
+    let listener = TcpListener::bind(socket_addr).await.unwrap();
     let files: &'static [TrentFile] = get_files().unwrap();
 
     while let Ok((stream, _)) = listener.accept().await {
