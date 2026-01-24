@@ -128,4 +128,8 @@ impl TrentFile {
             false
         }
     }
+
+    pub fn flags(&self) -> u32 {
+        0 ^ self.is_compressed() as u32
+    }
 }

@@ -6,8 +6,9 @@ pub mod server;
 pub mod util;
 
 use cfile::TrentFile;
+use server::config::ServerData;
 
-static LOADED_FILES: OnceLock<Vec<TrentFile>> = OnceLock::new();
+static SERVER_DATA: OnceLock<ServerData> = OnceLock::new();
 static VERSION: u32 = 0;
 
 #[tokio::main]

@@ -1,36 +1,35 @@
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-use crate::LOADED_FILES;
+use crate::SERVER_DATA;
 use crate::TrentFile;
 use tokio::net::{TcpListener, TcpStream};
-mod config;
+pub mod config;
 mod getfiles;
 mod standard;
 mod upload;
 
+use config::ServerData;
 use standard::ServerRoute;
 
+/// This function creates a bunch
 pub async fn start_server(port: u16) {
+    let files =
+        vec![TrentFile::from_path_zstd_mmap("dogdog.jpg", 15, String::from("dogdog"), 6).unwrap()];
+    set_server_data(ServerData::from_files(files)).unwrap();
+    let server_data = get_server_data().unwrap();
+
     let socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), port);
-
-    set_files(vec![
-        TrentFile::from_path_zstd_mmap("testvideo.mp4", 45, String::from("largevideo"), 10)
-            .unwrap(),
-    ])
-    .unwrap();
-
     let listener = TcpListener::bind(socket_addr).await.unwrap();
-    let files: &'static [TrentFile] = get_files().unwrap();
 
     while let Ok((stream, _)) = listener.accept().await {
-        let _task = tokio::task::spawn(handle(stream, files));
+        let _task = tokio::task::spawn(handle(stream, server_data));
     }
 }
 
-async fn handle(mut stream: TcpStream, files: &'static [TrentFile]) -> io::Result<()> {
+async fn handle(mut stream: TcpStream, server_data: &'static ServerData) -> io::Result<()> {
     match standard::route(&mut stream).await? {
-        ServerRoute::Upload => upload::upload_file(stream, files).await,
+        ServerRoute::Upload => upload::upload_file(stream, server_data.get_files()).await,
         ServerRoute::GetFiles => todo!(),
         ServerRoute::Unknown => todo!(),
     }
@@ -38,12 +37,11 @@ async fn handle(mut stream: TcpStream, files: &'static [TrentFile]) -> io::Resul
     Ok(())
 }
 
-fn set_files(files: Vec<TrentFile>) -> Result<(), ()> {
-    LOADED_FILES.set(files).map_err(|_| ())?;
+fn set_server_data(server_data: ServerData) -> Result<(), ()> {
+    SERVER_DATA.set(server_data).map_err(|_| ())?;
     Ok(())
 }
 
-fn get_files() -> Option<&'static [TrentFile]> {
-    // Some interesting reference stuff here
-    LOADED_FILES.get().map(|e| &**e)
+fn get_server_data() -> Option<&'static ServerData> {
+    SERVER_DATA.get().map(|e| &*e)
 }

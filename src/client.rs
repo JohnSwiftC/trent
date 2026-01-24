@@ -12,8 +12,8 @@ pub async fn start_client() -> io::Result<()> {
     standard::action(
         &mut stream,
         ClientRoute::DownloadFile {
-            name: "largevideo".to_owned(),
-            save_name: "newvid.mp4".to_owned(),
+            name: "dogdog".to_owned(),
+            save_name: "newdogdog.jpg".to_owned(),
         },
     )
     .await?;
