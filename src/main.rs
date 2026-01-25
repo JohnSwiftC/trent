@@ -37,25 +37,31 @@ enum Command {
 }
 
 #[derive(Args, Debug)]
-struct ClientArgs {
+pub struct ClientArgs {
     #[arg(long, default_value = "127.0.0.1:5000")]
     addr: String,
 
-    #[arg(long)]
-    available: Option<bool>,
+    #[command(subcommand)]
+    action: ClientAction,
+}
 
-    #[arg(long)]
-    file: Option<std::path::PathBuf>,
-
-    #[arg(long)]
-    out: Option<std::path::PathBuf>,
-
-    #[arg(long, default_value_t = false)]
-    dry_run: bool,
+#[derive(Subcommand, Debug)]
+enum ClientAction {
+    Download(DownloadArgs),
+    GetFiles,
 }
 
 #[derive(Args, Debug)]
-struct ServerArgs {
+struct DownloadArgs {
+    #[arg(long)]
+    file: String,
+
+    #[arg(short, long)]
+    output: String,
+}
+
+#[derive(Args, Debug)]
+pub struct ServerArgs {
     #[arg(long, default_value = "0.0.0.0:5000")]
     bind: String,
 }

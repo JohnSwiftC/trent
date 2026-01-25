@@ -5,13 +5,25 @@ mod download;
 mod getfiles;
 mod standard;
 
-use crate::ClientArgs;
+use crate::{ClientAction, ClientArgs, DownloadArgs};
 use standard::ClientRoute;
 
 pub async fn start_client(args: ClientArgs) -> io::Result<()> {
-    let mut stream = TcpStream::connect("127.0.0.1:6969").await.unwrap();
+    let mut stream = TcpStream::connect(args.addr).await.unwrap();
 
-    standard::action(&mut stream, ClientRoute::GetFiles).await?;
+    match args.action {
+        ClientAction::Download(DownloadArgs { file, output }) => {
+            standard::action(
+                &mut stream,
+                ClientRoute::DownloadFile {
+                    name: file,
+                    save_name: output,
+                },
+            )
+            .await?;
+        }
+        ClientAction::GetFiles => standard::action(&mut stream, ClientRoute::GetFiles).await?,
+    }
 
     Ok(())
 }
