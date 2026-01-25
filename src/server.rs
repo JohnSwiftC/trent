@@ -1,5 +1,4 @@
 use std::io;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use crate::SERVER_DATA;
 use crate::TrentFile;
@@ -9,11 +8,12 @@ mod getfiles;
 mod standard;
 mod upload;
 
+use crate::ServerArgs;
 use config::ServerData;
 use standard::ServerRoute;
 
 /// This function creates a bunch
-pub async fn start_server(port: u16) {
+pub async fn start_server(args: ServerArgs) {
     let files = vec![
         TrentFile::from_path_zstd_mmap("dogdog.jpg", 15, String::from("dogdog"), 6).unwrap(),
         TrentFile::from_path_mmap("testvideo.mp4", 40, "newvideoblahblah".to_owned()).unwrap(),
@@ -21,8 +21,7 @@ pub async fn start_server(port: u16) {
     set_server_data(ServerData::from_files(files)).unwrap();
     let server_data = get_server_data().unwrap();
 
-    let socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), port);
-    let listener = TcpListener::bind(socket_addr).await.unwrap();
+    let listener = TcpListener::bind(args.bind).await.unwrap();
 
     while let Ok((stream, _)) = listener.accept().await {
         let _task = tokio::task::spawn(handle(stream, server_data));

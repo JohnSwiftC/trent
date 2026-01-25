@@ -1,5 +1,4 @@
 use crate::ServerData;
-use crate::TrentFile;
 use std::io;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;

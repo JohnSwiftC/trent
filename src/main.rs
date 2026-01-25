@@ -18,8 +18,8 @@ async fn main() {
     let cli = Cli::parse();
 
     match cli.cmd {
-        Command::Client(args) => {}
-        Command::Server(args) => {}
+        Command::Client(args) => client::start_client(args).await.unwrap(),
+        Command::Server(args) => server::start_server(args).await,
     }
 }
 
@@ -40,6 +40,9 @@ enum Command {
 struct ClientArgs {
     #[arg(long, default_value = "127.0.0.1:5000")]
     addr: String,
+
+    #[arg(long)]
+    available: Option<bool>,
 
     #[arg(long)]
     file: Option<std::path::PathBuf>,
