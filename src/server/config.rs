@@ -32,7 +32,7 @@ impl ServerData {
         &self.files
     }
 
-    pub fn file_information(&self) -> &[u8] {
+    pub fn file_information(&'static self) -> &'static [u8] {
         &self.file_information
     }
 }

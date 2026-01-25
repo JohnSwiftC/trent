@@ -14,8 +14,10 @@ use standard::ServerRoute;
 
 /// This function creates a bunch
 pub async fn start_server(port: u16) {
-    let files =
-        vec![TrentFile::from_path_zstd_mmap("dogdog.jpg", 15, String::from("dogdog"), 6).unwrap()];
+    let files = vec![
+        TrentFile::from_path_zstd_mmap("dogdog.jpg", 15, String::from("dogdog"), 6).unwrap(),
+        TrentFile::from_path_mmap("testvideo.mp4", 40, "newvideoblahblah".to_owned()).unwrap(),
+    ];
     set_server_data(ServerData::from_files(files)).unwrap();
     let server_data = get_server_data().unwrap();
 
@@ -30,7 +32,7 @@ pub async fn start_server(port: u16) {
 async fn handle(mut stream: TcpStream, server_data: &'static ServerData) -> io::Result<()> {
     match standard::route(&mut stream).await? {
         ServerRoute::Upload => upload::upload_file(stream, server_data.get_files()).await,
-        ServerRoute::GetFiles => todo!(),
+        ServerRoute::GetFiles => getfiles::get_files(&mut stream, server_data).await.unwrap(),
         ServerRoute::Unknown => todo!(),
     }
 

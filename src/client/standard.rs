@@ -15,7 +15,10 @@ pub async fn action(stream: &mut TcpStream, route: ClientRoute) -> io::Result<()
             stream.write_u32(0).await?;
             crate::client::download::download_file(stream, &name, &save_name).await?;
         }
-        ClientRoute::GetFiles => stream.write_u32(1).await?,
+        ClientRoute::GetFiles => {
+            stream.write_u32(1).await?;
+            crate::client::getfiles::get_files(stream).await?;
+        }
     }
 
     Ok(())
