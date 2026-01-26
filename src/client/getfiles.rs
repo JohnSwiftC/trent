@@ -35,7 +35,7 @@ async fn parse_bytes(bytes: &[u8]) -> String {
 
             left = right;
 
-            result += &file_name;
+            result += &("[*] ".to_owned() + &file_name);
         } else {
             right += 1;
         }
