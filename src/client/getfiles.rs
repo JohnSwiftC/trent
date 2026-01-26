@@ -41,6 +41,5 @@ async fn parse_bytes(bytes: &[u8]) -> String {
         }
     }
 
-    println!("{}", result);
     result
 }
