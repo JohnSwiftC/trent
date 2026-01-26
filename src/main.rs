@@ -1,5 +1,5 @@
+use std::path::PathBuf;
 use std::sync::OnceLock;
-
 
 pub mod cfile;
 pub mod client;
@@ -59,6 +59,9 @@ struct DownloadArgs {
 pub struct ServerArgs {
     #[arg(long, default_value = "0.0.0.0:5000")]
     bind: String,
+
+    #[arg(long, short)]
+    config: PathBuf,
 }
 
 #[derive(Parser, Debug)]
@@ -90,6 +93,9 @@ struct ServeUx {
         value_hint = ValueHint::Other
     )]
     bind: String,
+
+    #[arg(long, short, value_hint = ValueHint::FilePath)]
+    config: PathBuf,
 }
 
 #[derive(Args, Debug)]
@@ -121,7 +127,10 @@ struct DownloadUx {
 impl Cli {
     fn into_command(self) -> Command {
         match self.cmd {
-            Cmd::Serve(s) => Command::Server(ServerArgs { bind: s.bind }),
+            Cmd::Serve(s) => Command::Server(ServerArgs {
+                bind: s.bind,
+                config: s.config,
+            }),
             Cmd::Files(f) => Command::Client(ClientArgs {
                 addr: f.addr,
                 action: ClientAction::GetFiles,

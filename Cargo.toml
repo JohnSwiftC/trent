@@ -8,6 +8,8 @@ anyhow = "1.0"
 clap = { version = "4.5.54", features = ["derive"] }
 memmap2 = "0.9.9"
 quinn = "0.11.9"
+serde = { version = "1.0.228", features = ["serde_derive"] }
+serde_yaml = "0.9.34"
 tempfile = "3.24.0"
 tokio = { version = "1", features = ["full"] }
 zstd = "0.13.3"

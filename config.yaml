@@ -1,0 +1,5 @@
+files:
+  - dogdog:
+      path: dogdog.jpg
+      compressed: false
+
