@@ -1,5 +1,7 @@
 use std::sync::OnceLock;
 
+use anyhow;
+
 pub mod cfile;
 pub mod client;
 pub mod server;
@@ -14,13 +16,15 @@ static SERVER_DATA: OnceLock<ServerData> = OnceLock::new();
 static VERSION: u32 = 0;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse().into_command();
 
     match cli {
-        Command::Client(args) => client::start_client(args).await.unwrap(),
-        Command::Server(args) => server::start_server(args).await,
+        Command::Client(args) => client::start_client(args).await?,
+        Command::Server(args) => server::start_server(args).await?,
     }
+
+    Ok(())
 }
 
 enum Command {

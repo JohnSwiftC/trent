@@ -1,13 +1,14 @@
 use crate::cfile::TrentFile;
+use anyhow;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
 };
 
-pub async fn upload_file(mut stream: TcpStream, files: &'static [TrentFile]) {
+pub async fn upload_file(mut stream: TcpStream, files: &'static [TrentFile]) -> anyhow::Result<()> {
     let mut file_name_bytes: Vec<u8> = vec![0; 256];
     if stream.read_exact(&mut file_name_bytes).await.is_err() {
-        return;
+        return Ok(());
     }
 
     let mut terminator: usize = 255;
@@ -29,31 +30,32 @@ pub async fn upload_file(mut stream: TcpStream, files: &'static [TrentFile]) {
         }
     }
 
-    if file.is_none() {
-        // handle some no named file case here
-        eprint!("Not good!!!");
-    }
+    let file = if let Some(f) = file {
+        f
+    } else {
+        stream.write_u32(u32::MAX).await?;
+        let error_msg = format!("File '{}' not found", file_name);
+        let mut error_bytes = [0u8; 256];
+        crate::util::write_str_utf8(&mut error_bytes, &error_msg);
+        stream.write_all(&error_bytes).await?;
+        return Ok(());
+    };
 
-    let file = file.unwrap();
-
-    stream.write_u32(crate::VERSION).await.unwrap();
-    stream
-        .write_u32(0 ^ file.is_compressed() as u32)
-        .await
-        .unwrap();
-    stream.write_u32(file.chunks()).await.unwrap();
-    stream.write_u32(file.chunk_size()).await.unwrap();
-    stream.write_u32(file.last_chunk_size()).await.unwrap();
+    stream.write_u32(crate::VERSION).await?;
+    stream.write_u32(0 ^ file.is_compressed() as u32).await?;
+    stream.write_u32(file.chunks()).await?;
+    stream.write_u32(file.chunk_size()).await?;
+    stream.write_u32(file.last_chunk_size()).await?;
 
     loop {
         let chunk = match stream.read_u32().await {
             Ok(m) => m,
-            Err(_e) => return,
+            Err(_e) => return Ok(()),
         };
 
-        stream
-            .write_all(file.get_chunk(chunk).unwrap())
-            .await
-            .unwrap();
+        let chunk_data = file
+            .get_chunk(chunk)
+            .ok_or_else(|| anyhow::anyhow!("Invalid chunk {}", chunk))?;
+        stream.write_all(chunk_data).await?;
     }
 }

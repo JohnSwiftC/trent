@@ -1,6 +1,8 @@
 use std::io;
 use tokio::net::TcpStream;
 
+use anyhow;
+
 mod download;
 mod getfiles;
 mod standard;
@@ -8,8 +10,8 @@ mod standard;
 use crate::{ClientAction, ClientArgs, DownloadArgs};
 use standard::ClientRoute;
 
-pub async fn start_client(args: ClientArgs) -> io::Result<()> {
-    let mut stream = TcpStream::connect(args.addr).await.unwrap();
+pub async fn start_client(args: ClientArgs) -> anyhow::Result<()> {
+    let mut stream = TcpStream::connect(args.addr).await?;
 
     match args.action {
         ClientAction::Download(DownloadArgs { file, output }) => {

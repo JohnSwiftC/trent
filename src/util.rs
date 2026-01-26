@@ -17,3 +17,8 @@ pub fn write_str_utf8(buf: &mut [u8; 256], s: &str) -> usize {
 
     len
 }
+
+pub fn read_str_utf8(buf: &[u8; 256]) -> &str {
+    let len = buf.iter().position(|&b| b == 0).unwrap_or(256);
+    std::str::from_utf8(&buf[..len]).unwrap_or("Invalid UTF-8")
+}
