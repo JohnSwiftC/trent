@@ -42,7 +42,7 @@ pub async fn upload_file(mut stream: TcpStream, files: &'static [TrentFile]) -> 
     };
 
     stream.write_u32(crate::VERSION).await?;
-    stream.write_u32(0 ^ file.is_compressed() as u32).await?;
+    stream.write_u32(file.is_compressed() as u32).await?;
     stream.write_u32(file.chunks()).await?;
     stream.write_u32(file.chunk_size()).await?;
     stream.write_u32(file.last_chunk_size()).await?;

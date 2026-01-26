@@ -122,14 +122,10 @@ impl TrentFile {
     }
 
     pub fn is_compressed(&self) -> bool {
-        if let Owner::Compressed(_) = self._owner {
-            true
-        } else {
-            false
-        }
+        matches!(self._owner, Owner::Compressed(_))
     }
 
     pub fn flags(&self) -> u32 {
-        0 ^ self.is_compressed() as u32
+        self.is_compressed() as u32
     }
 }

@@ -1,6 +1,6 @@
 use crate::ServerData;
 use std::io;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 
 pub async fn get_files(stream: &mut TcpStream, server_data: &'static ServerData) -> io::Result<()> {

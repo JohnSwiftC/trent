@@ -33,6 +33,6 @@ impl ServerData {
     }
 
     pub fn file_information(&'static self) -> &'static [u8] {
-        &self.file_information
+        self.file_information
     }
 }

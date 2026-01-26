@@ -100,7 +100,7 @@ async fn download_uncompressed(
     chunk_size: u32,
     last_chunk_size: u32,
 ) -> io::Result<()> {
-    let mut out = File::create_new(&save_name)?;
+    let mut out = File::create_new(save_name)?;
     let mut chunk_buffer = vec![0u8; chunk_size.max(last_chunk_size) as usize];
 
     for c in 0..chunks {
