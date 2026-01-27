@@ -16,3 +16,4 @@ zstd = "0.13.3"
 rusqlite = { version = "0.32", features = ["bundled"] }
 serde_json = "1"
 time = { version = "0.3", features = ["serde", "formatting"] }
+blake3 = "1.8.3"

@@ -1,10 +1,14 @@
+use clap::ValueEnum;
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::io;
+use std::net::{IpAddr, Ipv6Addr};
 use tokio::net::TcpStream;
 use tokio::time::{Duration, timeout};
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+use crate::{AddPeerArgs, RemovePeerArgs};
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, ValueEnum)]
 #[serde(rename_all = "lowercase")]
 pub enum PeerType {
     Public,
@@ -115,6 +119,20 @@ impl PeerStore {
         Ok(())
     }
 
+    pub fn remove_peer(&self, peer_id: &str) -> rusqlite::Result<()> {
+        self.conn.execute(
+            r#"DELETE FROM peers WHERE peer_id = ?1"#,
+            rusqlite::params![peer_id],
+        )?;
+        Ok(())
+    }
+    pub fn remove_peers_by_name(&self, name: &str) -> rusqlite::Result<usize> {
+        let n = self.conn.execute(
+            r#"DELETE FROM peers WHERE name = ?1"#,
+            rusqlite::params![name],
+        )?;
+        Ok(n)
+    }
     pub fn clear_addr(&self, peer_id: &str, ty: PeerType) -> rusqlite::Result<()> {
         self.conn.execute(
             r#"DELETE FROM peer_addrs WHERE peer_id = ?1 AND ty = ?2"#,
@@ -268,4 +286,38 @@ fn is_unique_local(v6: Ipv6Addr) -> bool {
 
 fn is_link_local_v6(v6: Ipv6Addr) -> bool {
     (v6.segments()[0] & 0xffc0) == 0xfe80
+}
+
+pub fn peer_id_from_addr(addr: &str) -> String {
+    // normalize: lowercase, trim, no whitespace
+    let norm = addr.trim().to_lowercase();
+
+    let hash = blake3::hash(norm.as_bytes());
+    format!("addr:{}", hash.to_hex())
+}
+
+pub fn add_peer(args: AddPeerArgs) -> io::Result<()> {
+    let store = PeerStore::open(args.peer_db).map_err(io::Error::other)?;
+
+    let peer_id = peer_id_from_addr(&args.host);
+
+    store
+        .upsert_peer(&peer_id, &args.name)
+        .map_err(io::Error::other)?;
+
+    store
+        .set_addr(&peer_id, args.ty, &args.host)
+        .map_err(io::Error::other)?;
+
+    Ok(())
+}
+
+pub fn remove_peer(args: RemovePeerArgs) -> io::Result<()> {
+    let store = PeerStore::open(args.peer_db).map_err(io::Error::other)?;
+
+    store
+        .remove_peers_by_name(&args.name)
+        .map_err(io::Error::other)?;
+
+    Ok(())
 }

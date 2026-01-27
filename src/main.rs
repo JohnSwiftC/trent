@@ -8,6 +8,7 @@ pub mod server;
 pub mod util;
 
 use cfile::TrentFile;
+use peers::PeerType;
 use server::config::ServerData;
 
 use clap::{Args, Parser, Subcommand, ValueHint};
@@ -22,6 +23,8 @@ async fn main() -> anyhow::Result<()> {
     match cli {
         Command::Client(args) => client::start_client(args).await?,
         Command::Server(args) => server::start_server(args).await?,
+        Command::AddPeer(args) => peers::add_peer(args)?,
+        Command::RemovePeer(args) => peers::remove_peer(args)?,
     }
 
     Ok(())
@@ -30,6 +33,8 @@ async fn main() -> anyhow::Result<()> {
 enum Command {
     Client(ClientArgs),
     Server(ServerArgs),
+    AddPeer(AddPeerArgs),
+    RemovePeer(RemovePeerArgs),
 }
 
 #[derive(Args, Debug)]
@@ -37,7 +42,7 @@ pub struct ClientArgs {
     #[arg(long, default_value = "127.0.0.1:5000")]
     addr: String,
 
-    peer_db: Option<PathBuf>,
+    peer_db: PathBuf,
 
     #[command(subcommand)]
     action: ClientAction,
@@ -63,10 +68,30 @@ pub struct ServerArgs {
     #[arg(long, default_value = "0.0.0.0:5000")]
     bind: String,
 
-    peer_db: Option<PathBuf>,
+    peer_db: PathBuf,
 
     #[arg(long, short)]
     config: PathBuf,
+}
+
+#[derive(Args, Debug)]
+pub struct AddPeerArgs {
+    #[arg(long, short)]
+    pub name: String,
+    #[arg(long)]
+    pub host: String,
+    #[arg(long, short)]
+    pub ty: PeerType,
+    #[arg(skip)]
+    pub peer_db: PathBuf,
+}
+
+#[derive(Args, Debug)]
+pub struct RemovePeerArgs {
+    #[arg(long, short)]
+    pub name: String,
+    #[arg(skip)]
+    pub peer_db: PathBuf,
 }
 
 #[derive(Parser, Debug)]
@@ -79,7 +104,7 @@ pub struct ServerArgs {
 )]
 pub struct Cli {
     #[arg(short, long)]
-    peer_db: Option<PathBuf>,
+    peer_db: PathBuf,
     #[command(subcommand)]
     cmd: Cmd,
 }
@@ -89,6 +114,8 @@ enum Cmd {
     Serve(ServeUx),
     Download(DownloadUx),
     Files(FilesUx),
+    AddPeer(AddPeerArgs),
+    RemovePeer(RemovePeerArgs),
 }
 
 #[derive(Args, Debug)]
@@ -152,6 +179,17 @@ impl Cli {
                     output: d.output,
                 }),
             }),
+
+            // This is unprecidented levels of jank
+            // TODO: REWORK CLAP ASAP LOL
+            Cmd::AddPeer(mut a) => {
+                a.peer_db = self.peer_db;
+                Command::AddPeer(a)
+            }
+            Cmd::RemovePeer(mut a) => {
+                a.peer_db = self.peer_db;
+                Command::RemovePeer(a)
+            }
         }
     }
 }
