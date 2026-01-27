@@ -3,6 +3,7 @@ use std::sync::OnceLock;
 
 pub mod cfile;
 pub mod client;
+pub mod peers;
 pub mod server;
 pub mod util;
 
@@ -36,6 +37,8 @@ pub struct ClientArgs {
     #[arg(long, default_value = "127.0.0.1:5000")]
     addr: String,
 
+    peer_db: Option<PathBuf>,
+
     #[command(subcommand)]
     action: ClientAction,
 }
@@ -60,6 +63,8 @@ pub struct ServerArgs {
     #[arg(long, default_value = "0.0.0.0:5000")]
     bind: String,
 
+    peer_db: Option<PathBuf>,
+
     #[arg(long, short)]
     config: PathBuf,
 }
@@ -73,6 +78,8 @@ pub struct ServerArgs {
     disable_help_subcommand = true
 )]
 pub struct Cli {
+    #[arg(short, long)]
+    peer_db: Option<PathBuf>,
     #[command(subcommand)]
     cmd: Cmd,
 }
@@ -129,14 +136,17 @@ impl Cli {
         match self.cmd {
             Cmd::Serve(s) => Command::Server(ServerArgs {
                 bind: s.bind,
+                peer_db: self.peer_db,
                 config: s.config,
             }),
             Cmd::Files(f) => Command::Client(ClientArgs {
                 addr: f.addr,
+                peer_db: self.peer_db,
                 action: ClientAction::GetFiles,
             }),
             Cmd::Download(d) => Command::Client(ClientArgs {
                 addr: d.addr,
+                peer_db: self.peer_db,
                 action: ClientAction::Download(DownloadArgs {
                     file: d.file,
                     output: d.output,
