@@ -1,5 +1,5 @@
 use std::io;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 
 pub async fn is_alive(stream: &mut TcpStream) -> io::Result<()> {

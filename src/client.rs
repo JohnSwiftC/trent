@@ -5,7 +5,9 @@ use anyhow;
 mod download;
 mod getfiles;
 mod isalive;
-mod standard;
+
+// Needs to be seen by the peers module
+pub mod standard;
 
 use crate::{ClientAction, ClientArgs, DownloadArgs};
 use standard::ClientRoute;

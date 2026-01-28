@@ -6,7 +6,10 @@ use std::net::{IpAddr, Ipv6Addr};
 use tokio::net::TcpStream;
 use tokio::time::{Duration, timeout};
 
-use crate::{AddPeerArgs, RemovePeerArgs};
+use crate::{
+    AddPeerArgs, RemovePeerArgs,
+    client::standard::{ClientRoute, action},
+};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, ValueEnum)]
 #[serde(rename_all = "lowercase")]
@@ -31,10 +34,15 @@ impl PeerExport {
     /// but im kind of against the clock here lol
     pub async fn connect(&self, timeout_ms: u64) -> anyhow::Result<TcpStream> {
         let dur = Duration::from_millis(timeout_ms.max(1));
-        let stream = timeout(dur, TcpStream::connect(self.addr.as_str()))
+        let mut stream = timeout(dur, TcpStream::connect(&self.addr))
             .await
             .map_err(|_| anyhow::anyhow!("connect timeout: {}", self.addr))?
             .map_err(|e| anyhow::anyhow!("connect failed: {}: {e}", self.addr))?;
+
+        timeout(dur, action(&mut stream, ClientRoute::IsAlive))
+            .await
+            .map_err(|_| anyhow::anyhow!("handshake timeout: {}", self.addr))?
+            .map_err(|e| anyhow::anyhow!("handshake failed: {}: {e}", self.addr))?;
 
         Ok(stream)
     }
