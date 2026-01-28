@@ -2,4 +2,6 @@ files:
   - dogdog:
       path: dogdog.jpg
       compressed: false
-
+  - video:
+      path: "newvid.mp4"
+      compressed: true

@@ -52,6 +52,7 @@ pub struct ClientArgs {
 enum ClientAction {
     Download(DownloadArgs),
     GetFiles,
+    ViewPeers,
 }
 
 #[derive(Args, Debug)]
@@ -113,9 +114,10 @@ pub struct Cli {
 enum Cmd {
     Serve(ServeUx),
     Download(DownloadUx),
-    Files(FilesUx),
+    Files,
     AddPeer(AddPeerArgs),
     RemovePeer(RemovePeerArgs),
+    ViewPeers,
 }
 
 #[derive(Args, Debug)]
@@ -130,16 +132,6 @@ struct ServeUx {
 
     #[arg(long, short, value_hint = ValueHint::FilePath)]
     config: PathBuf,
-}
-
-#[derive(Args, Debug)]
-struct FilesUx {
-    #[arg(
-        long,
-        value_name = "IP:PORT",
-        value_hint = ValueHint::Other
-    )]
-    addr: String,
 }
 
 #[derive(Args, Debug)]
@@ -166,8 +158,8 @@ impl Cli {
                 peer_db: self.peer_db,
                 config: s.config,
             }),
-            Cmd::Files(f) => Command::Client(ClientArgs {
-                addr: f.addr,
+            Cmd::Files => Command::Client(ClientArgs {
+                addr: "".to_owned(),
                 peer_db: self.peer_db,
                 action: ClientAction::GetFiles,
             }),
@@ -190,6 +182,11 @@ impl Cli {
                 a.peer_db = self.peer_db;
                 Command::RemovePeer(a)
             }
+            Cmd::ViewPeers => Command::Client(ClientArgs {
+                addr: "".to_owned(),
+                peer_db: self.peer_db,
+                action: ClientAction::ViewPeers,
+            }),
         }
     }
 }

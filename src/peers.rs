@@ -3,6 +3,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use std::io;
 use std::net::{IpAddr, Ipv6Addr};
+use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio::time::{Duration, timeout};
 
@@ -44,7 +45,15 @@ impl PeerExport {
             .map_err(|_| anyhow::anyhow!("handshake timeout: {}", self.addr))?
             .map_err(|e| anyhow::anyhow!("handshake failed: {}: {e}", self.addr))?;
 
-        Ok(stream)
+        // WHAT IM DOING HERE IS VERY JANK AND I SHOULD FIX IT
+        // when i do an is_alive, i wrote it in the server handler as if it was a normal operation
+        // this means, with the current flow of my server, that the server drops the TcpStream
+        // after the is alive, meaning this current stream is dead.
+        // instead of fixing my server logic right now, im going to save it for later and just open another stream!
+
+        stream.shutdown().await?;
+
+        Ok(TcpStream::connect(&self.addr).await?)
     }
 }
 
