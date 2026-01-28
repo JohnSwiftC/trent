@@ -338,24 +338,42 @@ mod tests {
     use tokio::net::TcpListener;
 
     #[tokio::test]
-    async fn peer_connectivity() {
-        tokio::task::spawn(async {
-            let listener = TcpListener::bind("127.0.0.1:7979").await.unwrap();
-            if let Ok((mut stream, _)) = listener.accept().await {
-                route(&mut stream).await.unwrap();
-                is_alive(&mut stream).await.unwrap();
-            }
+    async fn peer_connectivity() -> anyhow::Result<()> {
+        let listener = TcpListener::bind("127.0.0.1:0").await?;
+        let addr = listener.local_addr()?;
+
+        let server = tokio::task::spawn(async move {
+            let (mut stream, _) = listener.accept().await?;
+            route(&mut stream).await?;
+            is_alive(&mut stream).await?;
+
+            Ok::<(), anyhow::Error>(())
         });
 
         let peer = PeerExport {
             peer_id: "".to_owned(),
             name: "".to_owned(),
             ty: PeerType::Lan,
-            addr: "127.0.0.1:7979".to_owned(),
+            addr: addr.to_string(),
         };
 
         tokio::time::sleep(Duration::from_millis(2000)).await;
 
         assert!(peer.connect(1000).await.is_ok());
+        server.await??;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn failed_connection() {
+        let peer = PeerExport {
+            peer_id: "".to_owned(),
+            name: "".to_owned(),
+            ty: PeerType::Lan,
+            addr: "127.0.0.1:0".to_owned(),
+        };
+
+        assert!(peer.connect(1000).await.is_err());
     }
 }
