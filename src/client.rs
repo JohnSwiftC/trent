@@ -4,6 +4,7 @@ use anyhow;
 
 mod download;
 mod getfiles;
+mod isalive;
 mod standard;
 
 use crate::{ClientAction, ClientArgs, DownloadArgs};
