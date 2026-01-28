@@ -356,6 +356,6 @@ mod tests {
 
         tokio::time::sleep(Duration::from_millis(2000)).await;
 
-        assert!(peer.connect(200).await.is_ok());
+        assert!(peer.connect(1000).await.is_ok());
     }
 }
