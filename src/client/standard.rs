@@ -4,7 +4,7 @@ use tokio::net::TcpStream;
 
 pub enum ClientRoute {
     DownloadFile { name: String, save_name: String },
-    GetFiles,
+    GetFiles { name: String },
     IsAlive,
 }
 
@@ -16,9 +16,13 @@ pub async fn action(stream: &mut TcpStream, route: ClientRoute) -> io::Result<()
             stream.write_u32(0).await?;
             crate::client::download::download_file(stream, &name, &save_name).await?;
         }
-        ClientRoute::GetFiles => {
+        ClientRoute::GetFiles { name } => {
             stream.write_u32(1).await?;
-            print!("{}", crate::client::getfiles::get_files(stream).await?);
+            print!(
+                "{}\n{}",
+                name,
+                crate::client::getfiles::get_files(stream).await?
+            );
         }
         ClientRoute::IsAlive => {
             stream.write_u32(2).await?;

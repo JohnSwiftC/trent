@@ -212,6 +212,35 @@ impl PeerStore {
         Ok(PeerList { peers: out })
     }
 
+    pub fn peers_by_name(
+        &self,
+        name: &str,
+        view: RequestView,
+    ) -> rusqlite::Result<Vec<PeerExport>> {
+        let mut stmt = self
+            .conn
+            .prepare(r#"SELECT peer_id, name FROM peers WHERE name = ?1"#)?;
+
+        let rows = stmt.query_map(params![name], |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
+        })?;
+
+        let mut out = Vec::new();
+        for row in rows {
+            let (peer_id, name) = row?;
+            if let Some((ty, addr)) = self.pick_one_addr(&peer_id, view)? {
+                out.push(PeerExport {
+                    peer_id,
+                    name,
+                    ty,
+                    addr,
+                });
+            }
+        }
+
+        Ok(out)
+    }
+
     pub fn merge_peer_list_json(&mut self, json: &str) -> rusqlite::Result<()> {
         let list: PeerList = serde_json::from_str(json).map_err(|e| {
             rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e))
