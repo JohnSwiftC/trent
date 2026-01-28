@@ -329,3 +329,33 @@ pub fn remove_peer(args: RemovePeerArgs) -> io::Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::server::isalive::is_alive;
+    use crate::server::standard::route;
+    use tokio::net::TcpListener;
+
+    #[tokio::test]
+    async fn peer_connectivity() {
+        tokio::task::spawn(async {
+            let listener = TcpListener::bind("127.0.0.1:7979").await.unwrap();
+            if let Ok((mut stream, _)) = listener.accept().await {
+                route(&mut stream).await.unwrap();
+                is_alive(&mut stream).await.unwrap();
+            }
+        });
+
+        let peer = PeerExport {
+            peer_id: "".to_owned(),
+            name: "".to_owned(),
+            ty: PeerType::Lan,
+            addr: "127.0.0.1:7979".to_owned(),
+        };
+
+        tokio::time::sleep(Duration::from_millis(2000)).await;
+
+        assert!(peer.connect(200).await.is_ok());
+    }
+}

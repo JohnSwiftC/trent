@@ -4,8 +4,8 @@ use crate::SERVER_DATA;
 use crate::TrentFile;
 pub mod config;
 mod getfiles;
-mod isalive;
-mod standard;
+pub mod isalive;
+pub mod standard;
 mod upload;
 
 use crate::ServerArgs;
