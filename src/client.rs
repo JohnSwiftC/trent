@@ -9,6 +9,7 @@ mod isalive;
 // Needs to be seen by the peers module
 pub mod standard;
 
+use crate::peers::{PeerExport, PeerStore};
 use crate::{ClientAction, ClientArgs, DownloadArgs};
 use standard::ClientRoute;
 
