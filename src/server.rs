@@ -4,11 +4,13 @@ use crate::SERVER_DATA;
 use crate::TrentFile;
 pub mod config;
 mod getfiles;
+mod isalive;
 mod standard;
 mod upload;
 
 use crate::ServerArgs;
 use config::ServerData;
+use isalive::is_alive;
 use standard::ServerRoute;
 
 use serde::Deserialize;
@@ -61,6 +63,7 @@ async fn handle(mut stream: TcpStream, server_data: &'static ServerData) -> anyh
     match standard::route(&mut stream).await? {
         ServerRoute::Upload => upload::upload_file(stream, server_data.get_files()).await?,
         ServerRoute::GetFiles => getfiles::get_files(&mut stream, server_data).await?,
+        ServerRoute::IsAlive => is_alive(&mut stream).await?,
         ServerRoute::Unknown => todo!(),
     }
 

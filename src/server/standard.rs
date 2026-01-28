@@ -4,6 +4,7 @@ use tokio::net::TcpStream;
 pub enum ServerRoute {
     Upload,
     GetFiles,
+    IsAlive,
     Unknown,
 }
 
@@ -22,6 +23,7 @@ pub async fn route(stream: &mut TcpStream) -> io::Result<ServerRoute> {
     match action {
         0 => Ok(ServerRoute::Upload),
         1 => Ok(ServerRoute::GetFiles),
+        2 => Ok(ServerRoute::IsAlive),
         _ => Ok(ServerRoute::Unknown),
     }
 }
