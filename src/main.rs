@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
+mod session;
+
 pub mod cfile;
 pub mod client;
 pub mod peers;
